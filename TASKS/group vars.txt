@@ -1,0 +1,18 @@
+vars:
+  services:
+    - service1: "service1"
+    - service2: "service2"
+    - service3: "service3"
+    - <<...>>
+    - service29: "service29"
+    - service30: "service30"
+
+vars:
+  repo_url: https://gitlab.com/app
+  workspace: /home/app
+
+vars:
+  repo: https://github.com/app/
+  workspace: /home/
+  win_dir: c:\downloads
+  win_url: https://github.com/app/

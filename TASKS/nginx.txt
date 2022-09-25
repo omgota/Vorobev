@@ -1,0 +1,24 @@
+â nginx.conf
+
+server {
+listen 80;
+server_name test.ru;
+location / {
+root   /var/files;
+index  index.html index.htm;
+}
+
+location /two {
+alias  /var/new-files;
+index  index.html index.htm;
+}
+
+location /var {
+root   /var/jpg-files;
+index  *.jpg;
+try_files $uri $uri/ /var/jpg-files.jpg;
+}
+
+location @error {
+    error_page 404 = @error; return 404;
+}

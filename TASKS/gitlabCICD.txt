@@ -1,0 +1,75 @@
+Run untagged jobs
+stages:
+    - preparation
+    - build
+    - test
+    - deploy
+
+download-dep:
+  stage: preparation
+  script: gb build
+when: always
+tag: gitlab
+
+run test1:
+  stage: test
+  script: echo 'test'
+  only: ['branches', 'tags']
+
+run test2:
+  stage: test
+  only:
+    - branches@gitlab/gitlab
+  except:
+    - main@gitlab/gitlab
+retry: 2
+
+run test33:
+  stage: test
+  script: echo 'v1.0.0*'
+  only:
+    - branches@gitlab/gitlab
+tag: v1.0.0
+
+build windows app:
+  stage: buid
+  image: Windows
+artifacts:
+  path:
+    - /windows/app.exe
+  expire_in: 1 day
+when: always
+
+build linux:
+  stage: buid
+  image: RedHat
+artifacts:
+  path:
+    - /linux/app
+  expire_in: 1 day
+when: always
+
+win deploy:
+  stage: deploy
+  image: myrepo.nexus.ru/windows
+only:
+  - tags 
+script:
+  - curl -s -v -u "user:pass" --upload-file app.exe "http://myrepo.nexus.ru/windows"
+
+linux deploy:
+  stage: deploy
+  image: myrepo.nexus.ru/linux
+only:
+  - tags
+script:
+  - curl -s -v -u "user:pass" --upload-file app.exe "http://myrepo.nexus.ru/linux"
+
+
+
+
+
+
+
+
+

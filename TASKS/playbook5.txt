@@ -1,0 +1,8 @@
+---
+- name: run cmd1
+  shell: cmd1
+  register: cmd1_result
+
+- name: Init cmd2
+  shell: cmd2 --arg=<<errorlevel 0>>
+  when: cmd1_result

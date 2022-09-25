@@ -1,0 +1,23 @@
+[Unit] 
+Description=simple_daemon_service.rb
+Requires=network-online.target
+After=network-online.target
+After=application.service
+Requires="--bind-adress:0.0.0.0"
+
+[Service] 
+Type=simple 
+ExecStart=/opt/my-app/app.service.rb
+User=app
+Group=app
+Restart=on-failure
+
+[Install] 
+WantedBy=multi-user.target
+
+systemctl daemon-reload
+systemctl start simple_daemon_service.rb
+systemctl enable simple_daemon_service.rb
+systemctl status simple_daemon_service.rb
+
+

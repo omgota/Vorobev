@@ -1,0 +1,11 @@
+#!/bin/bash
+
+datafile
+VAR=grep -q "no data" datafile
+VAR2=generate report && export-reports
+if[[ $VAR  $? -eq 0 ]];then
+echo "no data"
+exit 0
+elif [[ $VAR  $? -eq 1 ]]; then
+echo $VAR2
+fi

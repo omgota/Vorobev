@@ -1,0 +1,13 @@
+---
+- name: install app
+  become: yes
+
+    - name: Download installer
+      win_get_url: 
+        url: "{{ aws_cli_msi_url }}"
+        dest: "{{ aws_cli_download_dir }}\\awscli.msi"
+        force: no
+    - name: Install AWS CLI
+      win_package:
+        path: "{{ aws_cli_download_dir }}\\awscli.msi"
+        state: present
