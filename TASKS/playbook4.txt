@@ -1,3 +1,0 @@
----
-- name: run cmd1
-  shell: cmd1
