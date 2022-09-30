@@ -3,7 +3,6 @@ Description=simple_daemon_service.rb
 Requires=network-online.target
 After=network-online.target
 After=application.service
-Requires="--bind-adress:0.0.0.0"
 
 [Service] 
 Type=simple 
