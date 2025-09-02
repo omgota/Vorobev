@@ -1,0 +1,138 @@
+Для развертывания вашего Go-приложения в Kubernetes с использованием GitLab CI/CD, выполните следующие шаги:
+
+1. Dockerfile для Go-приложения
+
+Создайте Dockerfile в корне проекта:
+
+```Dockerfile
+Сборка приложения
+
+FROM golang:1.21-alpine AS builder
+WORKDIR /app
+COPY . .
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/test-app
+
+Финальный образ
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /app/test-app .
+EXPOSE 8080
+CMD ["./test-app"]
+```
+
+2. Манифест для Kubernetes (deployment.yaml)
+
+Создайте файл deployment.yaml:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+name: test-app
+spec:
+replicas: 1
+selector:
+matchLabels:
+app: test-app
+template:
+metadata:
+labels:
+app: test-app
+spec:
+containers:
+- name: test-app
+image: ${IMAGE}
+ports:
+- containerPort: 8080
+
+apiVersion: v1
+kind: Service
+metadata:
+name: test-app-service
+spec:
+selector:
+app: test-app
+ports:
+- protocol: TCP
+port: 80
+targetPort: 8080
+```
+
+3. Настройка GitLab CI/CD (.gitlab-ci.yml)
+
+```yaml
+stages:
+- build
+- deploy
+
+variables:
+IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+
+build:
+stage: build
+image: docker:latest
+services:
+- docker:dind
+variables:
+DOCKER_HOST: tcp://docker:2376
+DOCKER_TLS_CERTDIR: ""
+DOCKER_DRIVER: overlay2
+before_script:
+- docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+script:
+- docker build -t $IMAGE .
+- docker push $IMAGE
+
+deploy:
+stage: deploy
+image: alpine:latest
+before_script:
+- apk add --no-cache curl
+- curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+- chmod +x kubectl && mv kubectl /usr/local/bin/
+- apk add --no-cache gettext
+script:
+- |
+# Замена переменной в манифесте и деплой
+envsubst < deployment.yaml > deployment-final.yaml
+kubectl apply -f deployment-final.yaml
+only:
+- main
+```
+
+4. Настройка окружения
+
+1. GitLab Runner с Docker Executor:
+· Убедитесь, что runner зарегистрирован с тегами docker,kubernetes.
+· В конфигурации runner (config.toml) добавьте:
+toml [[runners]] executor = "docker" [runners.docker] privileged = true volumes = ["/cache", "/var/run/docker.sock:/var/run/docker.sock"]
+2. Kubernetes Cluster (используйте Kind для локального тестирования):
+· Установите Kind: https://kind.sigs.k8s.io/docs/user/quick-start/
+· Создайте кластер:
+bash kind create cluster --name gitlab-test
+· Получите конфиг:
+bash kubectl cluster-info --context kind-gitlab-test
+3. Переменные в GitLab:
+· KUBECONFIG – содержимое файла конфигурации Kubernetes (для доступа к кластеру).
+· CI_REGISTRY_USER, CI_REGISTRY_PASSWORD – credentials для Docker Registry.
+
+5. Проверка
+
+1. Запушите код в GitLab.
+2. Паipeline должен выполнить сборку и деплой.
+3. Проверьте поды в кластере:
+bash kubectl get pods
+
+Важно!
+
+· Настройте корректный namespace в манифестах при необходимости.
+· Для продакшена используйте секреты для хранения чувствительных данных (например, через kubectl create secret).
+· Настройте Ingress для доступа к приложению, если требуется.
+
+Если возникнут проблемы с доступом к кластеру из GitLab, проверьте:
+
+· Корректность KUBECONFIG.
+· Сетевые правила (firewall) между GitLab Runner и Kubernetes API.
